@@ -37,6 +37,7 @@ using namespace ::apache::thrift::transport;
 namespace impala {
 
 class ImpalaLdap;
+string GetShortUsernameFromKerberosPrincipal(const string& principal);
 
 /// System-wide authentication manager responsible for initialising authentication systems,
 /// including SSL, Sasl and Kerberos, and for providing auth-enabled Thrift structures to

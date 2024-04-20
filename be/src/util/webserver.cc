@@ -149,6 +149,8 @@ DEFINE_bool(disable_content_security_policy_header, false,
     "If true then the webserver will not add the Content-Security-Policy "
     "HTTP header to HTTP responses");
 
+DECLARE_bool(allow_custom_ldap_filters_with_kerberos_auth);
+DECLARE_bool(enable_group_filter_check_for_authenticated_kerberos_user);
 DECLARE_bool(enable_ldap_auth);
 DECLARE_string(hostname);
 DECLARE_bool(is_coordinator);
@@ -711,7 +713,16 @@ sq_callback_result_t Webserver::BeginRequestCallback(struct sq_connection* conne
     if (cookie_header != nullptr) {
       Status cookie_status =
           AuthenticateCookie(hash_, cookie_header, &username, &cookie_rand_value);
-      if (cookie_status.ok()) {
+      bool filter_success = true;
+      if (FLAGS_webserver_require_ldap || (
+              FLAGS_webserver_require_spnego &&
+              FLAGS_enable_ldap_auth &&
+              FLAGS_enable_group_filter_check_for_authenticated_kerberos_user
+              )) {
+        filter_success =
+            ldap_->LdapCheckFilters(GetShortUsernameFromKerberosPrincipal(username));
+      }
+      if (cookie_status.ok() && filter_success) {
         authenticated = true;
         cookie_authenticated = true;
         request_info->remote_user = strdup(username.c_str());
@@ -778,6 +789,30 @@ sq_callback_result_t Webserver::BeginRequestCallback(struct sq_connection* conne
       sq_callback_result_t spnego_result =
           HandleSpnego(connection, request_info, &response_headers);
       if (spnego_result == SQ_CONTINUE_HANDLING) {
+        if (FLAGS_enable_ldap_auth
+            && FLAGS_enable_group_filter_check_for_authenticated_kerberos_user) {
+          string short_user =
+              GetShortUsernameFromKerberosPrincipal(request_info->remote_user);
+          if (ldap_ == nullptr) {
+            const ::impala::Status& _status = ImpalaLdap::CreateLdap(&ldap_,
+                FLAGS_webserver_ldap_user_filter, FLAGS_webserver_ldap_group_filter);
+            if (!_status.ok()) {
+              LOG(ERROR)
+                  << "Failed to create ldap on when checking ldap filter on spnego";
+              SendResponse(connection, "500 Internal Server Error", "text/plain",
+                  "Internal Server Error.", response_headers);
+              total_negotiate_auth_failure_->Increment(1);
+              return SQ_HANDLED_OK;
+            }
+          }
+          bool success = ldap_->LdapCheckFilters(short_user);
+          if (!success) {
+            SendResponse(connection, "403 Forbidden", "text/plain",
+                "You are not allowed to access to web ui.", response_headers);
+            total_negotiate_auth_failure_->Increment(1);
+            return SQ_HANDLED_OK;
+          }
+        }
         // Spnego negotiation was successful.
         AddCookie(request_info->remote_user, &response_headers, &cookie_rand_value);
       } else {
