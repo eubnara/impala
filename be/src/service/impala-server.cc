@@ -2645,7 +2645,7 @@ bool ImpalaServer::IsIdleConnection(
     ConnectionToSessionMap::iterator it = connection_to_sessions_map_.find(connection_id);
 
     // Not every connection must have an associated session
-    if (it == connection_to_sessions_map_.end()) return false;
+    if (it == connection_to_sessions_map_.end()) return true;
 
     session_ids = it->second;
 
