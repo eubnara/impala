@@ -79,6 +79,10 @@ under the License.
           <groupId>com.sun.jersey</groupId>
           <artifactId>jersey-server</artifactId>
         </exclusion>
+        <exclusion>
+          <groupId>javax.ws.rs</groupId>
+          <artifactId>jsr311-api</artifactId>
+        </exclusion>
       </exclusions>
     </dependency>
 
@@ -118,6 +122,10 @@ under the License.
         <exclusion>
           <groupId>com.cloudera</groupId>
           <artifactId>*</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>com.sun.jersey</groupId>
+          <artifactId>jersey-bundle</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
