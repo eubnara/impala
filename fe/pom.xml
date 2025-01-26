@@ -87,6 +87,10 @@ under the License.
           <artifactId>jersey-server</artifactId>
         </exclusion>
         <exclusion>
+          <groupId>javax.ws.rs</groupId>
+          <artifactId>jsr311-api</artifactId>
+        </exclusion>
+        <exclusion>
           <groupId>log4j</groupId>
           <artifactId>log4j</artifactId>
         </exclusion>
@@ -141,6 +145,10 @@ under the License.
         <exclusion>
           <groupId>com.cloudera</groupId>
           <artifactId>jwtprovider-knox</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>com.sun.jersey</groupId>
+          <artifactId>jersey-bundle</artifactId>
         </exclusion>
         <exclusion>
           <groupId>org.apache.ranger</groupId>
